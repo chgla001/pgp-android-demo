@@ -1,0 +1,42 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 28
+    defaultConfig {
+        applicationId "de.emporacreative.pgpandroiddemo"
+        minSdkVersion 19
+        targetSdkVersion 28
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'com.android.support:appcompat-v7:28.0.0-alpha1'
+    implementation 'com.android.support.constraint:constraint-layout:1.1.2'
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+
+    //imports for using PGP
+    // https://mvnrepository.com/artifact/com.madgag.spongycastle/core
+    implementation group: 'com.madgag.spongycastle', name: 'core', version: '1.58.0.0'
+    // https://mvnrepository.com/artifact/com.madgag.spongycastle/prov
+    implementation group: 'com.madgag.spongycastle', name: 'prov', version: '1.58.0.0'
+    // https://mvnrepository.com/artifact/com.madgag.spongycastle/bcpkix-jdk15on
+    implementation group: 'com.madgag.spongycastle', name: 'bcpkix-jdk15on', version: '1.58.0.0'
+    // https://mvnrepository.com/artifact/com.madgag.spongycastle/bcpg-jdk15on
+    implementation group: 'com.madgag.spongycastle', name: 'bcpg-jdk15on', version: '1.58.0.0'
+
+    //import OkHttp for http requests
+    //http://square.github.io/okhttp/
+    implementation 'com.squareup.okhttp3:okhttp:3.11.0'
+}
