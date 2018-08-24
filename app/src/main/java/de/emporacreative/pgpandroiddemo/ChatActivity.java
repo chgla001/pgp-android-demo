@@ -1,6 +1,7 @@
 package de.emporacreative.pgpandroiddemo;
 
 
+import android.content.Context;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -17,11 +18,16 @@ import android.widget.Toast;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.spongycastle.openpgp.PGPException;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 
+import de.emporacreative.pgpandroiddemo.PgpUtil.PgpHelper;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.MediaType;
@@ -33,7 +39,9 @@ import okhttp3.Response;
 public class ChatActivity extends AppCompatActivity {
     String chatPartnerName;
     int chatPartnerId;
-    ArrayList<String> arrayListMessages = new ArrayList<>();
+    ArrayList<String> arrayListReceivedMessages = new ArrayList<>();
+    ArrayList<String> arrayListSentMessages = new ArrayList<>();
+    ArrayList<String> arrayListAllMessages = new ArrayList<>();
     ArrayAdapter listAdapter;
     ListView listViewChat;
 
@@ -42,6 +50,10 @@ public class ChatActivity extends AppCompatActivity {
 
     JSONObject userdataUser;
     JSONObject userdataChatpartner;
+    private String plainTextFile = "plain-text.txt";
+    private String cipherTextFile = "cypher-text.txt";
+    private String decPlainTextFile = "dec-plain-text.txt";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,9 +87,9 @@ public class ChatActivity extends AppCompatActivity {
         }
         //Klick Methode für den update-Nutton
         if (id == R.id.action_update) {
-            //todo update messages
+            Log.e("TAG", "update Menu item clicked");
             updateMessages();
-            Toast.makeText(this, "update", Toast.LENGTH_SHORT).show();
+
         }
         return super.onOptionsItemSelected(item);
     }
@@ -85,32 +97,35 @@ public class ChatActivity extends AppCompatActivity {
     private void initList() {
         listViewChat = findViewById(R.id.listViewChat);
 
-        //Todo: Nachrichten aus Datenbank laden -> kann später rausgenommen werden, da in updateMessages die nachrichten neu geladen werden
-        arrayListMessages.add("Testnachricht1");
-        arrayListMessages.add("Testnachricht2");
-
-//        messages = arrayListMessages.toArray(new String[0]);
-        listAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, arrayListMessages);
+//        messages = arrayListReceivedMessages.toArray(new String[0]);
+        listAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, arrayListAllMessages);
         listViewChat.setAdapter(listAdapter);
     }
 
     public void sendMessage(View view) {
         EditText editTextMessage = findViewById(R.id.editTextMessage);
-
+        String clearMessage = editTextMessage.getText().toString();
+        String timestamp = new Date().getTime() + "";
+        Log.e("TAG", "timestamp: " + timestamp);
         JSONObject jsonObject = new JSONObject();
-//        Log.e("userdata", userdataUser.toString());
-//        Log.e("userdataChat", userdataChatpartner.toString());
+
         try {
-            jsonObject.put("text", editTextMessage.getText().toString());
-            jsonObject.put("timestamp", new Date().getTime() + "");
+            /*save in sendList*/
+            arrayListSentMessages.add("(" + timestamp + ") " + userdataUser.getString("name") + ": " + clearMessage);
+            updateMessageList();
+
+            encrypt(userdataChatpartner.getInt("id"), clearMessage);
+            String encryptedMessage = MyUtils.convertInputStreamToString(openFileInput(cipherTextFile));
+
+            jsonObject.put("text", encryptedMessage);
+            jsonObject.put("timestamp", timestamp);
             jsonObject.put("read", false);
             jsonObject.put("senderid", userdataUser.getInt("id"));
             jsonObject.put("receiverid", userdataChatpartner.getInt("id"));
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-
+        Log.e("TAG", "sendMessage() ich schicke ab: " + jsonObject.toString());
         RequestBody body = RequestBody.create(JSON, jsonObject.toString());
         Request request = new Request.Builder()
                 .url("http://192.168.2.116:4000/messages/new-message")
@@ -123,15 +138,13 @@ public class ChatActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onResponse(Call call, final Response response) throws IOException {
+            public void onResponse(Call call, final Response response) {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         try {
                             String responseString = response.body().string();
-                            Log.e("TAG", "responseString " + responseString);
-                            JSONObject jsonObject1 = new JSONObject(responseString);
-                            upddateMessageList(jsonObject1.getString("text"));
+                            Log.e("TAG", "sendMessage() responseString " + responseString);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -139,37 +152,33 @@ public class ChatActivity extends AppCompatActivity {
                 });
             }
         });
-
-        Log.e("arraylist", arrayListMessages.toString());
-        listAdapter.notifyDataSetChanged();
     }
 
     private void updateMessages() {
-        arrayListMessages.clear();
+        arrayListReceivedMessages.clear();
         try {
-            Log.e("userdata", "updateMessages: " + userdataUser.toString());
+            //Log.e("userdata", "updateMessages: " + userdataUser.toString());
             int userid = userdataUser.getInt("id");
             int chatpartnerid = userdataChatpartner.getInt("id");
-            //sent messages
-            loadMessages(userid, chatpartnerid);
-            //received messages
+
+            //received the sent messages from the chatpartner to the user
             loadMessages(chatpartnerid, userid);
         } catch (JSONException e) {
             e.printStackTrace();
         }
-
-
     }
 
-    private void loadMessages(int senderid, int recipientid) {
-        Log.e("sender recipient", senderid + " " + recipientid);
+    private void loadMessages(final int senderid, final int recipientid) {
+        Log.e("TAG", "sender: " + senderid + ", recipient " + recipientid);
+
+
         Request request = new Request.Builder()
                 .url("http://192.168.2.116:4000/messages/getMessages?senderid=" + senderid + "&recipientid=" + recipientid)
                 .build();
-
         httpClient.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
+                Log.e("TAG", e.getMessage());
                 e.printStackTrace();
             }
 
@@ -179,19 +188,33 @@ public class ChatActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         try {
-                            String data = response.body().string();
-                            //Log.e("arraylist", data);
-                            JSONArray jsonArray = null;
-                            if (data.length() > 0) {
-                                jsonArray = new JSONArray(data);
+                            //if no messages, the server returns status code 204
+                            if (response.code() == 204) {
+                                Toast.makeText(ChatActivity.this, "Keine Nachrichten", Toast.LENGTH_SHORT).show();
+                                Log.e("TAG", "loadMessages() Statuscode " + response.code());
+                            } else {
+                                String data = response.body().string();
+                                //Log.e("arraylist", data);
+                                JSONArray messageArray = null;
+                                if (data.length() > 0) {
+                                    messageArray = new JSONArray(data);
+                                    for (int i = 0; i < messageArray.length(); i++) {
+                                        JSONObject messageObject = messageArray.getJSONObject(i);
+
+                                        MyUtils.createFile(getApplicationContext(), cipherTextFile, messageObject.getString("text"));
+                                        decrypt(userdataUser.getString("name"), userdataUser.getString("password"));
+
+                                        Log.e("TAG", "loadMessages() timestamp" + messageObject.getInt("timestamp"));
+                                        String decryptedMessage = MyUtils.readFile(getApplicationContext(), decPlainTextFile);
+                                        arrayListReceivedMessages.add("(" + messageObject.getInt("timestamp") + ") " + userdataChatpartner.getString("name") + ": " + decryptedMessage);
+                                    }
+                                    updateMessageList();
+                                }
                             }
-                            for (int i = 0; i < jsonArray.length(); i++) {
-                                JSONObject userdata = jsonArray.getJSONObject(i);
-                                arrayListMessages.add(userdata.getString("text"));
-                            }
-                            listAdapter.notifyDataSetChanged();
-                        } catch (Exception e) {
+                        } catch (JSONException e) {
                             Log.e("Error", e.getMessage());
+                            e.printStackTrace();
+                        } catch (IOException e) {
                             e.printStackTrace();
                         }
                     }
@@ -200,9 +223,14 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
-    private void upddateMessageList(String data) {
-        arrayListMessages.add(data);
-        Log.e("arraylist", arrayListMessages.toString());
+
+    private void updateMessageList() {
+        arrayListAllMessages.clear();
+        arrayListAllMessages.addAll(arrayListReceivedMessages);
+        arrayListAllMessages.addAll(arrayListSentMessages);
+        Log.e("TAG", "updateMessageList() arrayListReceivedMessages: " + arrayListReceivedMessages.toString());
+        Log.e("TAG", "updateMessageList() arrayListSentMessages: " + arrayListSentMessages.toString());
+        Log.e("TAG", "updateMessageList() arrayListReceivedMessages: " + arrayListAllMessages.toString());
         listAdapter.notifyDataSetChanged();
     }
 
@@ -244,8 +272,9 @@ public class ChatActivity extends AppCompatActivity {
                     public void run() {
                         try {
                             String data = response.body().string();
-                            Log.e("userdataChatpartner", data);
+                            Log.e("TAG", "userdataChatpartner " + data);
                             userdataChatpartner = new JSONObject(data);
+                            MyUtils.createFile(getApplicationContext(), "pubKey" + userdataChatpartner.getInt("id") + ".txt", userdataChatpartner.getString("pgpKey"));
                         } catch (Exception e) {
                             Log.e("Error", e.getMessage());
                             e.printStackTrace();
@@ -256,4 +285,42 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * @see "https://github.com/damico/OpenPgp-BounceCastle-Example/blob/master/src/org/jdamico/bc/openpgp/tests/TestBCOpenPGP.java"
+     */
+    private void encrypt(int receiverId, String nachricht) throws IOException, PGPException {
+        boolean isArmored = true;
+        boolean integrityCheck = true;
+        MyUtils.createFile(getApplicationContext(), plainTextFile, nachricht);
+//        FileInputStream pubKeyIs = openFileInput("pub_alice.txt");
+        FileInputStream pubKeyIs = openFileInput("pubKey" + receiverId + ".txt");
+        FileOutputStream cipheredFileIs = openFileOutput(cipherTextFile, Context.MODE_PRIVATE);
+        PgpHelper.getInstance().encryptFile(cipheredFileIs, getFilesDir().getAbsolutePath() + "/" + plainTextFile, PgpHelper.getInstance().readPublicKey(pubKeyIs), isArmored, integrityCheck);
+        cipheredFileIs.close();
+        pubKeyIs.close();
+    }
+
+    /**
+     * @see "https://github.com/damico/OpenPgp-BounceCastle-Example/blob/master/src/org/jdamico/bc/openpgp/tests/TestBCOpenPGP.java"
+     */
+    private void decrypt(String username, String passwd) {
+        FileInputStream cipheredFileIs = null;
+        try {
+            cipheredFileIs = openFileInput(cipherTextFile);
+
+            FileInputStream privKeyIn = openFileInput("privKey" + username + ".txt");
+            FileOutputStream plainTextFileIs = openFileOutput(decPlainTextFile, Context.MODE_PRIVATE);
+
+            PgpHelper.getInstance().decryptFile(cipheredFileIs, plainTextFileIs, privKeyIn, passwd.toCharArray());
+            cipheredFileIs.close();
+            plainTextFileIs.close();
+            privKeyIn.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (PGPException e) {
+            e.printStackTrace();
+        }
+    }
 }
