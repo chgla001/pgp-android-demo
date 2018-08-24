@@ -184,39 +184,39 @@ public class ChatActivity extends AppCompatActivity {
 
             @Override
             public void onResponse(Call call, final Response response) {
+                final String data;
+                if (response.code() == 204) {
+                    Toast.makeText(ChatActivity.this, "Keine Nachrichten", Toast.LENGTH_SHORT).show();
+                    Log.e("TAG", "loadMessages() Statuscode " + response.code());
+                } else {
+                    try {
+                        data = response.body().string();
+                        //Log.e("arraylist", data);
+                        JSONArray messageArray = null;
+                        if (data.length() > 0) {
+                            messageArray = new JSONArray(data);
+                            for (int i = 0; i < messageArray.length(); i++) {
+                                JSONObject messageObject = messageArray.getJSONObject(i);
+
+                                MyUtils.createFile(getApplicationContext(), cipherTextFile, messageObject.getString("text"));
+                                decrypt(userdataUser.getString("name"), userdataUser.getString("password"));
+
+                                Log.e("TAG", "loadMessages() timestamp" + messageObject.getInt("timestamp"));
+                                String decryptedMessage = MyUtils.readFile(getApplicationContext(), decPlainTextFile);
+                                arrayListReceivedMessages.add("(" + messageObject.getInt("timestamp") + ") " + userdataChatpartner.getString("name") + ": " + decryptedMessage);
+                            }
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        try {
-                            //if no messages, the server returns status code 204
-                            if (response.code() == 204) {
-                                Toast.makeText(ChatActivity.this, "Keine Nachrichten", Toast.LENGTH_SHORT).show();
-                                Log.e("TAG", "loadMessages() Statuscode " + response.code());
-                            } else {
-                                String data = response.body().string();
-                                //Log.e("arraylist", data);
-                                JSONArray messageArray = null;
-                                if (data.length() > 0) {
-                                    messageArray = new JSONArray(data);
-                                    for (int i = 0; i < messageArray.length(); i++) {
-                                        JSONObject messageObject = messageArray.getJSONObject(i);
-
-                                        MyUtils.createFile(getApplicationContext(), cipherTextFile, messageObject.getString("text"));
-                                        decrypt(userdataUser.getString("name"), userdataUser.getString("password"));
-
-                                        Log.e("TAG", "loadMessages() timestamp" + messageObject.getInt("timestamp"));
-                                        String decryptedMessage = MyUtils.readFile(getApplicationContext(), decPlainTextFile);
-                                        arrayListReceivedMessages.add("(" + messageObject.getInt("timestamp") + ") " + userdataChatpartner.getString("name") + ": " + decryptedMessage);
-                                    }
-                                    updateMessageList();
-                                }
-                            }
-                        } catch (JSONException e) {
-                            Log.e("Error", e.getMessage());
-                            e.printStackTrace();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
+                        updateMessageList();
                     }
                 });
             }
