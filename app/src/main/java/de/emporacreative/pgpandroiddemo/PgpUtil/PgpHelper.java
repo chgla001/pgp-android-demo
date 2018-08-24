@@ -139,7 +139,7 @@ public class PgpHelper {
      */
     @SuppressWarnings("unchecked")
     public void decryptFile(InputStream in, OutputStream out, InputStream keyIn, char[] passwd)
-            throws Exception {
+            throws IOException, PGPException {
         Security.addProvider(new BouncyCastleProvider());
         in = PGPUtil.getDecoderStream(in);
         PGPObjectFactory pgpF = new PGPObjectFactory(in, new BcKeyFingerprintCalculator());

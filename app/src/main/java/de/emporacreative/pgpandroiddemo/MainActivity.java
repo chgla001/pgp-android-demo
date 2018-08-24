@@ -98,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "FileNotFoundException", Toast.LENGTH_SHORT).show();
             e.printStackTrace();
         }
-        String publicKey = convertInputStreamToString(pubKeyIs);
+        String publicKey = MyUtils.convertInputStreamToString(pubKeyIs);
         try {
             jsonObject.put("name", username);
             jsonObject.put("email", "not.set@email.yet");
@@ -110,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         RequestBody body = RequestBody.create(JSON, jsonObject.toString());
-        Log.e("body", body.toString());
+        //Log.e("body", body.toString());
         Request request = new Request.Builder()
                 .url("http://192.168.2.116:4000/login/userdata")
                 .post(body)
@@ -128,7 +128,7 @@ public class MainActivity extends AppCompatActivity {
                     public void run() {
                         try {
                             String userdata = response.body().string();
-                            Log.e("responsedata", userdata);
+                            Log.e("TAG", "sendUserDataToDatabase() userdata from response" +userdata);
                             //Toast.makeText(MainActivity.this,  response.code() +" the code" , Toast.LENGTH_SHORT).show();
 
                             Intent showUserListActivity = new Intent(getApplicationContext(), UserListActivity.class);
@@ -143,17 +143,5 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private String convertInputStreamToString(InputStream inputStream) {
-        BufferedReader r = new BufferedReader(new InputStreamReader(inputStream));
-        StringBuilder total = new StringBuilder();
-        String line;
-        try {
-            while ((line = r.readLine()) != null) {
-                total.append(line).append('\n');
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return total.toString();
-    }
+
 }
