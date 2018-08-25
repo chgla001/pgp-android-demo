@@ -25,6 +25,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 
 import de.emporacreative.pgpandroiddemo.PgpUtil.PgpHelper;
@@ -105,13 +107,13 @@ public class ChatActivity extends AppCompatActivity {
     public void sendMessage(View view) {
         EditText editTextMessage = findViewById(R.id.editTextMessage);
         String clearMessage = editTextMessage.getText().toString();
-        String timestamp = new Date().getTime() + "";
+        Long timestamp = new Date().getTime();
         Log.e("TAG", "timestamp: " + timestamp);
         JSONObject jsonObject = new JSONObject();
 
         try {
             /*save in sendList*/
-            arrayListSentMessages.add("(" + timestamp + ") " + userdataUser.getString("name") + ": " + clearMessage);
+            arrayListSentMessages.add("(" + MyUtils.convertTime(timestamp) + ") " + userdataUser.getString("name") + ": " + clearMessage);
             updateMessageList();
 
             encrypt(userdataChatpartner.getInt("id"), clearMessage);
@@ -201,9 +203,9 @@ public class ChatActivity extends AppCompatActivity {
                                 MyUtils.createFile(getApplicationContext(), cipherTextFile, messageObject.getString("text"));
                                 decrypt(userdataUser.getString("name"), userdataUser.getString("password"));
 
-                                Log.e("TAG", "loadMessages() timestamp" + messageObject.getInt("timestamp"));
+                                Log.e("TAG", "loadMessages() timestamp" + messageObject.getLong("timestamp"));
                                 String decryptedMessage = MyUtils.readFile(getApplicationContext(), decPlainTextFile);
-                                arrayListReceivedMessages.add("(" + messageObject.getInt("timestamp") + ") " + userdataChatpartner.getString("name") + ": " + decryptedMessage);
+                                arrayListReceivedMessages.add("(" + MyUtils.convertTime(messageObject.getLong("timestamp")) + ") " + userdataChatpartner.getString("name") + ": " + decryptedMessage);
                             }
                         }
                     } catch (IOException e) {
@@ -228,6 +230,14 @@ public class ChatActivity extends AppCompatActivity {
         arrayListAllMessages.clear();
         arrayListAllMessages.addAll(arrayListReceivedMessages);
         arrayListAllMessages.addAll(arrayListSentMessages);
+
+        Collections.sort(arrayListAllMessages, new Comparator<String>() {
+            @Override
+            public int compare(String s1, String s2) {
+                return s1.compareToIgnoreCase(s2);
+            }
+        });
+
         Log.e("TAG", "updateMessageList() arrayListReceivedMessages: " + arrayListReceivedMessages.toString());
         Log.e("TAG", "updateMessageList() arrayListSentMessages: " + arrayListSentMessages.toString());
         Log.e("TAG", "updateMessageList() arrayListReceivedMessages: " + arrayListAllMessages.toString());

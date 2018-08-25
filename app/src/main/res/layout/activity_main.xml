@@ -25,6 +25,7 @@
     <EditText
         android:id="@+id/editTextPassword"
         android:layout_width="match_parent"
+        android:inputType="textPassword"
         android:layout_height="wrap_content" />
 
     <!-- using a relative layout to place the button on the right -->

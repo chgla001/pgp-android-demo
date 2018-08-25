@@ -9,6 +9,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.text.Format;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class MyUtils {
 
@@ -66,5 +69,11 @@ public class MyUtils {
         }
 
         return ret;
+    }
+
+    public static String convertTime(long time){
+        Date date = new Date(time);
+        Format format = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
+        return format.format(date);
     }
 }
