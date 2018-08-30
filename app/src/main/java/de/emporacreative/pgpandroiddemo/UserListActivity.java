@@ -1,7 +1,6 @@
 package de.emporacreative.pgpandroiddemo;
 
 import android.content.Intent;
-import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -11,7 +10,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-
 import android.widget.ListView;
 
 import org.json.JSONArray;
@@ -23,19 +21,16 @@ import java.util.ArrayList;
 
 import okhttp3.Call;
 import okhttp3.Callback;
-import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
-import okhttp3.RequestBody;
 import okhttp3.Response;
 
 public class UserListActivity extends AppCompatActivity {
-    JSONObject jsonObjectUser;
     ArrayList<String> arrayListUsernames;
     OkHttpClient httpClient;
-    MediaType JSON = MediaType.get("application/json; charset=utf-8");
     ArrayAdapter listAdapter;
     JSONArray userlist;
+    String host = getString(R.string.host);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -93,7 +88,6 @@ public class UserListActivity extends AppCompatActivity {
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
-                Log.e("userid", userid +"");
                 Intent showChatActivity = new Intent(getApplicationContext(), ChatActivity.class);
                 showChatActivity.putExtra("chatPartnerName", chatPartner);
                 showChatActivity.putExtra("chatPartnerId", userid);
@@ -105,7 +99,7 @@ public class UserListActivity extends AppCompatActivity {
 
     private void loadUsernames() {
         Request request = new Request.Builder()
-                .url("http://192.168.2.116:4000/login/user")
+                .url(host + "/login/user")
                 .build();
         httpClient.newCall(request).enqueue(new Callback() {
             @Override
@@ -119,9 +113,7 @@ public class UserListActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         try {
-
                             String data = response.body().string();
-                            //Log.e("arraylist", data);
                             userlist = new JSONArray(data);
                             arrayListUsernames.clear();
                             for (int i = 0; i < userlist.length(); i++) {

@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">PGP Android Demo</string>
+    <string name="host">http://192.168.2.116:4000</string>
 </resources>

@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -13,13 +12,10 @@ import org.json.JSONObject;
 import org.spongycastle.jce.provider.BouncyCastleProvider;
 import org.spongycastle.openpgp.PGPException;
 
-import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
@@ -42,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
 
     OkHttpClient httpClient;
     MediaType JSON = MediaType.get("application/json; charset=utf-8");
+    String host = getString(R.string.host);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,7 +52,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void register(View view) {
-
         try {
             genKeyPair(editTextName.getText().toString(), editTextPassword.getText().toString());
         } catch (Exception e) {
@@ -67,23 +63,14 @@ public class MainActivity extends AppCompatActivity {
 
     private void genKeyPair(String name, String passwd) throws IOException, PGPException, NoSuchAlgorithmException {
         boolean isArmored = true;
-
         RSAKeyPairGenerator rkpg = new RSAKeyPairGenerator();
-
         Security.addProvider(new BouncyCastleProvider());
-
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA", new BouncyCastleProvider());
-
         kpg.initialize(2048);
-
         KeyPair kp = kpg.generateKeyPair();
-
         FileOutputStream out1 = openFileOutput("privKey" + name + ".txt", Context.MODE_PRIVATE);
         FileOutputStream out2 = openFileOutput("pubKey" + name + ".txt", Context.MODE_PRIVATE);
-
         rkpg.exportKeyPair(out1, out2, kp.getPublic(), kp.getPrivate(), name, passwd.toCharArray(), isArmored);
-
-
     }
 
     private void sendUserDataToDatabase() {
@@ -108,11 +95,9 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         RequestBody body = RequestBody.create(JSON, jsonObject.toString());
-        //Log.e("body", body.toString());
         Request request = new Request.Builder()
-                .url("http://192.168.2.116:4000/login/userdata")
+                .url(host + "/login/userdata")
                 .post(body)
                 .build();
         httpClient.newCall(request).enqueue(new Callback() {
@@ -128,9 +113,6 @@ public class MainActivity extends AppCompatActivity {
                     public void run() {
                         try {
                             String userdata = response.body().string();
-                            Log.e("TAG", "sendUserDataToDatabase() userdata from response" +userdata);
-                            //Toast.makeText(MainActivity.this,  response.code() +" the code" , Toast.LENGTH_SHORT).show();
-
                             Intent showUserListActivity = new Intent(getApplicationContext(), UserListActivity.class);
                             showUserListActivity.putExtra("userdata", userdata);
                             startActivity(showUserListActivity);

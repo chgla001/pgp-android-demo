@@ -49,6 +49,7 @@ public class ChatActivity extends AppCompatActivity {
 
     OkHttpClient httpClient;
     MediaType JSON = MediaType.get("application/json; charset=utf-8");
+    String host = getString(R.string.host);
 
     JSONObject userdataUser;
     JSONObject userdataChatpartner;
@@ -89,17 +90,13 @@ public class ChatActivity extends AppCompatActivity {
         }
         //Klick Methode für den update-Nutton
         if (id == R.id.action_update) {
-            Log.e("TAG", "update Menu item clicked");
             updateMessages();
-
         }
         return super.onOptionsItemSelected(item);
     }
 
     private void initList() {
         listViewChat = findViewById(R.id.listViewChat);
-
-//        messages = arrayListReceivedMessages.toArray(new String[0]);
         listAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, arrayListAllMessages);
         listViewChat.setAdapter(listAdapter);
     }
@@ -108,7 +105,6 @@ public class ChatActivity extends AppCompatActivity {
         EditText editTextMessage = findViewById(R.id.editTextMessage);
         String clearMessage = editTextMessage.getText().toString();
         Long timestamp = new Date().getTime();
-        Log.e("TAG", "timestamp: " + timestamp);
         JSONObject jsonObject = new JSONObject();
 
         try {
@@ -127,10 +123,9 @@ public class ChatActivity extends AppCompatActivity {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        Log.e("TAG", "sendMessage() ich schicke ab: " + jsonObject.toString());
         RequestBody body = RequestBody.create(JSON, jsonObject.toString());
         Request request = new Request.Builder()
-                .url("http://192.168.2.116:4000/messages/new-message")
+                .url(host + "/messages/new-message")
                 .post(body)
                 .build();
         httpClient.newCall(request).enqueue(new Callback() {
@@ -146,7 +141,6 @@ public class ChatActivity extends AppCompatActivity {
                     public void run() {
                         try {
                             String responseString = response.body().string();
-                            Log.e("TAG", "sendMessage() responseString " + responseString);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -159,7 +153,6 @@ public class ChatActivity extends AppCompatActivity {
     private void updateMessages() {
         arrayListReceivedMessages.clear();
         try {
-            //Log.e("userdata", "updateMessages: " + userdataUser.toString());
             int userid = userdataUser.getInt("id");
             int chatpartnerid = userdataChatpartner.getInt("id");
 
@@ -171,16 +164,12 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     private void loadMessages(final int senderid, final int recipientid) {
-        Log.e("TAG", "sender: " + senderid + ", recipient " + recipientid);
-
-
         Request request = new Request.Builder()
-                .url("http://192.168.2.116:4000/messages/getMessages?senderid=" + senderid + "&recipientid=" + recipientid)
+                .url(host + "/messages/getMessages?senderid=" + senderid + "&recipientid=" + recipientid)
                 .build();
         httpClient.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                Log.e("TAG", e.getMessage());
                 e.printStackTrace();
             }
 
@@ -189,11 +178,9 @@ public class ChatActivity extends AppCompatActivity {
                 final String data;
                 if (response.code() == 204) {
                     Toast.makeText(ChatActivity.this, "Keine Nachrichten", Toast.LENGTH_SHORT).show();
-                    Log.e("TAG", "loadMessages() Statuscode " + response.code());
                 } else {
                     try {
                         data = response.body().string();
-                        //Log.e("arraylist", data);
                         JSONArray messageArray = null;
                         if (data.length() > 0) {
                             messageArray = new JSONArray(data);
@@ -203,7 +190,6 @@ public class ChatActivity extends AppCompatActivity {
                                 MyUtils.createFile(getApplicationContext(), cipherTextFile, messageObject.getString("text"));
                                 decrypt(userdataUser.getString("name"), userdataUser.getString("password"));
 
-                                Log.e("TAG", "loadMessages() timestamp" + messageObject.getLong("timestamp"));
                                 String decryptedMessage = MyUtils.readFile(getApplicationContext(), decPlainTextFile);
                                 arrayListReceivedMessages.add("(" + MyUtils.convertTime(messageObject.getLong("timestamp")) + ") " + userdataChatpartner.getString("name") + ": " + decryptedMessage);
                             }
@@ -238,9 +224,6 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
 
-        Log.e("TAG", "updateMessageList() arrayListReceivedMessages: " + arrayListReceivedMessages.toString());
-        Log.e("TAG", "updateMessageList() arrayListSentMessages: " + arrayListSentMessages.toString());
-        Log.e("TAG", "updateMessageList() arrayListReceivedMessages: " + arrayListAllMessages.toString());
         listAdapter.notifyDataSetChanged();
     }
 
@@ -267,7 +250,7 @@ public class ChatActivity extends AppCompatActivity {
 
     private void getDataFromChatPartner() {
         Request request = new Request.Builder()
-                .url("http://192.168.2.116:4000/login/userById?id=" + chatPartnerId)
+                .url(host + "/login/userById?id=" + chatPartnerId)
                 .build();
         httpClient.newCall(request).enqueue(new Callback() {
             @Override
@@ -282,7 +265,6 @@ public class ChatActivity extends AppCompatActivity {
                     public void run() {
                         try {
                             String data = response.body().string();
-                            Log.e("TAG", "userdataChatpartner " + data);
                             userdataChatpartner = new JSONObject(data);
                             MyUtils.createFile(getApplicationContext(), "pubKey" + userdataChatpartner.getInt("id") + ".txt", userdataChatpartner.getString("pgpKey"));
                         } catch (Exception e) {
