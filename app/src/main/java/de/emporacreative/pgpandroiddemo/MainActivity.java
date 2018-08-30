@@ -38,12 +38,14 @@ public class MainActivity extends AppCompatActivity {
 
     OkHttpClient httpClient;
     MediaType JSON = MediaType.get("application/json; charset=utf-8");
-    String host = getString(R.string.host);
+    String host;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        host = getString(R.string.host);
 
         editTextName = findViewById(R.id.editTextName);
         editTextPassword = findViewById(R.id.editTextPassword);

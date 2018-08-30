@@ -30,12 +30,13 @@ public class UserListActivity extends AppCompatActivity {
     OkHttpClient httpClient;
     ArrayAdapter listAdapter;
     JSONArray userlist;
-    String host = getString(R.string.host);
+    String host;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_list);
+        host = getString(R.string.host);
 
         httpClient = new OkHttpClient();
         arrayListUsernames = new ArrayList<>();

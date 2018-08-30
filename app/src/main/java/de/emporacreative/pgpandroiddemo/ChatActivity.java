@@ -49,7 +49,7 @@ public class ChatActivity extends AppCompatActivity {
 
     OkHttpClient httpClient;
     MediaType JSON = MediaType.get("application/json; charset=utf-8");
-    String host = getString(R.string.host);
+    String host;
 
     JSONObject userdataUser;
     JSONObject userdataChatpartner;
@@ -62,6 +62,7 @@ public class ChatActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
+        host = getString(R.string.host);
 
         httpClient = new OkHttpClient();
         getDataFromIntent();
@@ -268,7 +269,7 @@ public class ChatActivity extends AppCompatActivity {
                             userdataChatpartner = new JSONObject(data);
                             MyUtils.createFile(getApplicationContext(), "pubKey" + userdataChatpartner.getInt("id") + ".txt", userdataChatpartner.getString("pgpKey"));
                         } catch (Exception e) {
-                            Log.e("Error", e.getMessage());
+                            Log.e("Error", e.toString());
                             e.printStackTrace();
                         }
                     }
