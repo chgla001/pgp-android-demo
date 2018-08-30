@@ -42,7 +42,6 @@ public class MyUtils {
     }
 
     public static String readFile(Context context, String filename) {
-
         String ret = "";
 
         try {
@@ -67,7 +66,6 @@ public class MyUtils {
         } catch (IOException e) {
             Log.e("login activity", "Can not read file: " + e.toString());
         }
-
         return ret;
     }
 

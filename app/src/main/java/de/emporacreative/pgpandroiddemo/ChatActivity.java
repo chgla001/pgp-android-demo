@@ -283,8 +283,8 @@ public class ChatActivity extends AppCompatActivity {
     private void encrypt(int receiverId, String nachricht) throws IOException, PGPException {
         boolean isArmored = true;
         boolean integrityCheck = true;
+
         MyUtils.createFile(getApplicationContext(), plainTextFile, nachricht);
-//        FileInputStream pubKeyIs = openFileInput("pub_alice.txt");
         FileInputStream pubKeyIs = openFileInput("pubKey" + receiverId + ".txt");
         FileOutputStream cipheredFileIs = openFileOutput(cipherTextFile, Context.MODE_PRIVATE);
         PgpHelper.getInstance().encryptFile(cipheredFileIs, getFilesDir().getAbsolutePath() + "/" + plainTextFile, PgpHelper.getInstance().readPublicKey(pubKeyIs), isArmored, integrityCheck);
