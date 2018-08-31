@@ -193,6 +193,8 @@ public class ChatActivity extends AppCompatActivity {
 
                                 String decryptedMessage = MyUtils.readFile(getApplicationContext(), decPlainTextFile);
                                 arrayListReceivedMessages.add("(" + MyUtils.convertTime(messageObject.getLong("timestamp")) + ") " + userdataChatpartner.getString("name") + ": " + decryptedMessage);
+
+                                setReadStatus(messageObject.getInt("id"));
                             }
                         }
                     } catch (IOException e) {
@@ -206,6 +208,41 @@ public class ChatActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         updateMessageList();
+                    }
+                });
+            }
+        });
+    }
+
+    private void setReadStatus(int messageId){
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put("id", messageId);
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+        RequestBody body = RequestBody.create(JSON, jsonObject.toString());
+        Request request = new Request.Builder()
+                .url(host + "/messages/updateMessage")
+                .post(body)
+                .build();
+        httpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onResponse(Call call, final Response response) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            String responseString = response.body().string();
+                            Log.e("response", responseString);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
                 });
             }
