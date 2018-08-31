@@ -214,11 +214,11 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
-    private void setReadStatus(int messageId){
+    private void setReadStatus(int messageId) {
         JSONObject jsonObject = new JSONObject();
         try {
             jsonObject.put("id", messageId);
-        } catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
         RequestBody body = RequestBody.create(JSON, jsonObject.toString());
@@ -298,19 +298,14 @@ public class ChatActivity extends AppCompatActivity {
 
             @Override
             public void onResponse(Call call, final Response response) {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            String data = response.body().string();
-                            userdataChatpartner = new JSONObject(data);
-                            MyUtils.createFile(getApplicationContext(), "pubKey" + userdataChatpartner.getInt("id") + ".txt", userdataChatpartner.getString("pgpKey"));
-                        } catch (Exception e) {
-                            Log.e("Error", e.toString());
-                            e.printStackTrace();
-                        }
-                    }
-                });
+                try {
+                    String data = response.body().string();
+                    userdataChatpartner = new JSONObject(data);
+                    MyUtils.createFile(getApplicationContext(), "pubKey" + userdataChatpartner.getInt("id") + ".txt", userdataChatpartner.getString("pgpKey"));
+                } catch (Exception e) {
+                    Log.e("Error", e.toString());
+                    e.printStackTrace();
+                }
             }
         });
     }
